@@ -1,0 +1,890 @@
+This app will have the following functionality -->
+
+1st google login and the login will take and display the user's google id picture that he / she used in the id of sign in 
+
+2nd It will keep track of our previous expenses and will also be able to render the balance data being updated accordingly to addition and deduction in balance with respect to incomes and expenses 
+
+3rd it will have a signout functionality 
+
+4th and it will also render the list of all the transactions that happened 
+
+***************************************************************************************************************************************
+
+npm create vite @latest
+
+cd to your project name and run -> npm i -> now run command -> npm run dev -> so that you can visit this address to check that is our project working =>http://localhost:5173/
+
+now we are good to go 
+
+now delete everything in app.jsx -> then do rafce in it 
+
+---------------------------> Now we start building our expense tracker application 
+
+in our src folder create a folder named pages -> now inside pages -> create two folder one will containg our login/authentication by google part and the other will contain our home page where we will have our actuall expense tracker application ->
+
+so name the 1st folder :-auth
+name the 2nd folder :-expense-tracker
+
+
+---------->
+Now as we are using firebase for this project so inside src folder create folder named ->  config 
+-> and another folder in src named -> hooks 
+
+
+--This is our folder structure done for the entire project 
+
+*****************************
+Now we start by installing dependencies -> 
+1)npm i react-router-dom 
+[this will help us with routing process in our react app]
+2)firebase
+[this will get the firebase for us]
+
+and now we will start building 
+
+-------------------------------------------------------------------------->
+
+go to firebase.google.com -> signup with your google account    
+
+-> tap onto create a project/add project -> enter the name of your project (expense tracker) -> accept their terms and conditions
+and hit create project -> tap continue -> 
+
+-------->
+Now if we tap onto the build option we can see variety of services being offered by firebase but in this app we will only be needing 
+---> authentication and firestore database 
+
+
+----****----
+so now click onto the authentication option in our firbase console -> Then now it will ask what kind of authentication we are going to use -> so in our case we use google authentication -> select google -> enable -> then we choose our email in the option of support email for project then we hit save and we actually start adding this authentication provider to our project 
+
+check that the status for google authentication is showing enabled now we go -> 
+
+----> ***** ---->
+Now inorder to connect the project we have here in our fire base console and the project we have in our code we need to click on project overview and then select-> the "web" option on the firebase console </> as we are setting up our firebase for our webapp 
+
+->now we need to register our web app -> start by giving a name (expense-tracker)
+->then tick this option -> Also set up Firebase Hosting for this app. -> then click on register app .
+->now as we have installed firebase earlier in our code we will now just copy the code that appears after registration ->
+->now we comeback to our config folder in vs code and create a new file named -> firebase-config.js and then paste that code inside it
+->this above process should already connect our project with our own project
+->Now we need to install our firebase cli using the next command given on our firebase project -> npm install -g firebase-tools
+->now we go to the next option ->Deploy to Firebase Hosting
+and copy the command and run in our code -> firebase login -> this will redirect us to google login so choose your google id to login and then also allow everything and once you see a successful message in our terminal we are good to go 
+
+
+---------------------------------------------------------------------->
+now we start our authentication and to do that 1stly we need to create our authentication page 
+
+-> we go to our main.js and import browser router  -> import { BrowserRouter } from 'react-router-dom'
+ 
+ then in our main.jsx file we wrap our app component with browser router ->
+ <BrowserRouter>
+    <App />
+  </BrowserRouter>
+
+
+->Now we start setting up our routes -> we go to app.jsx and we import routes , route from react-router-dom ->
+import {Routes , Route} from "react-router-dom"
+
+
+then we start setting our routes -> 
+ <Routes>
+      <Route path='/' exact element={}/>
+ </Routes>
+
+
+ -> now as we hit the / route we are straight forwardly going to be sent to the authentication page which we create now inside ->
+ pages -> auth -> and name it index.js -> And for now we just return a simple auth component saying hello world ->
+ export const Auth = () => {
+  return <div>
+    Hellow World !!!
+  </div>
+}
+
+------->
+now we import this auth component inside our app.jsx and then make it render on our home "/" route ->import { Auth } from './pages/auth/index.js'
+
+-->      <Route path='/' exact element={ <Auth/> }/>
+
+
+-----> Now we define the second route for our expense tracker page ->       <Route path='/expenseTrackerPage' exact element = {} />
+
+Now as we created the page for our auth in the same way we create our page for the expense tracker ->
+so we go to our pages -> then expense-tracker folder -> then we create a index.jsx file -> inside it we create a simple expense tracker component->
+export const ExpenseTracker = () => {
+    return <div>
+      Hellow World from expense tracker page!!!
+    </div>
+  }
+
+
+--->then we import this component in our page inside app.jsx and make it render to our 2nd route path -> /expenseTrackerPage
+->      import { ExpenseTracker } from './pages/expense-tracker/index.jsx'
+->      <Route path='/expenseTrackerPage' exact element = {<ExpenseTracker/>} />
+
+
+================================>
+Till here we set up our routes -> Now check that if our routes are working or not so when we check and see our route path working on ->http://localhost:5173/ 
+We are good to go 
+
+
+----> Now we start implementing our authentication in our auth page -> go to index.jsx file of auth folder -> inside it ->we design it 
+
+1) give a classname of login-page to our div -> then add a <p> tag inside it  with text -> Sign in with google to continue </p>
+
+2) we add a sign in button with a class and handleSignIn function ->
+ <button className="login-with-google-btn" onClick={signInWithGoogle}>Sign In With Google</button>
+
+3) Now we start by defining this signInWithGoogle function above the return statement in this page -> 
+and as this authentication function will be calling a part of our firebase package -> so we go to firebase-config file
+and start by importing some packages from firebase/auth 
+-> import {getAuth , GoogleAuthProvider} from "firebase/auth";
+(this auth tells us that we will be using authentication in our pages and GoogleAuthProvider is specifically for google authentication)
+
+->Now we come down below the definition of the app ->
+export const provider =  new GoogleAuthProvider();
+export const auth = getAuth(app);
+
+
+4) Now we come to our auth file and import these two thing here -> 
+import { auth,provider } from "../../config/firebase-config";
+
+5) Now we import some functions from fire base itself inside our auth file only ->
+import {signInWithPopup} from "firebase/auth";
+
+6) Now inside our function definition we use this method of firebase/auth that we just imported ->
+and as the response of this function will be asynchronous so we will make our function async await for fetching the function response nd also REMEMBER that this response will be having all details of the user that signed in so that we can use them later 
+-> const signInWithGoogle = async() =>{ 
+  //these results will be including of the user that signed in that we can use later on 
+const results = await signInWithPopup(auth,provider);
+}
+
+7) Till here the login should be working with google authentication so if we just simply log the results variable and go to our home page we should have a button that says sign in with google and on a successful sign in we should be having the user data in the comsole  
+and if this all is happening we are good to go.
+
+8) Now as we have user info  we need to keep track of user id , wether or not user is logged in , profile picture , userName
+so we now ----------> Destructure this info from our results and store it inside our local storage -----> using ->
+ localStorage.setItem fucntion
+
+
+[And as we know that we can only store booleans strings and numbers in our local storage and not objects directly ]
+so here -----> we SIMPLY TURN THE OBJECT INTO A STRING AND THEN TURN IT BACK TO AN OBJECT WHENEVER NEEDED =====>
+const authInfo = {
+  userID: results.user.uid,
+  name:results.user.displayName,
+  profilePhoto:results.user.photoURL,
+  isAuth:true,
+}
+
+Then we set our local storage item to be equal to this object so as we can't directly store object so we will use json.stringify -> 
+localStorage.setItem("auth" , JSON.stringify(authInfo));
+
+
+---->This is it now if we check in the console we will be having our user data stored in localStorage
+-->So to check this we sign in again with our gmail and then we check the console -> Application -> localstorage -> our local host address -> http://localhost:5173/ ---------------->
+[here if we see the user details stored properly as intended we are now good to go .]
+
+------->
+Whenever we login we need to keep our user inside our sign in page then ---> we need to redirect them to our Expense-Tracker Page as they just logged in 
+
+****So IN ORDER TO REDIRECT YOU TO ANOTHER PAGE WE ARE GOING TO ANOTHER PAGE WE ARE GOING TO USE THE NAVIGATE FUNCTIONALITY OF REACT-ROUTER-DOM****
+
+-> Now inside our index.jsx of auth folder we import useNavigate hook from react router dom -> 
+import { useNavigate } from "react-router-dom";
+
+-> then above the return function of index.js/auth we destructure from this hook -> 
+i.e-> const navigate = useNavigate();
+
+-> then we apply this navigate hook to redirect the user to our expense-tracker page -> 
+go to the signInWithGoogle function and at its end apply the navigate hook and also give the desired path to it 
+*I.E-->navigate("/expenseTrackerPage");
+REMEMBER WE USED THIS SPECIFIC URL AS WE ALREADY HAVE DEFINED IT INSIDE OUR APP.JSX FILE
+Now check by logging in again and if your url is being redirected to our expense-tracker page then we are good to go 
+
+--------->
+Now we need to design our expense tracker page -> go to the index.js of our expense-tracker app -> inside it now we design -> 
+
+-> Start by giving a class->"expense-tracker" to our div -> inside it we have a div with container class ->inside it -> we have a h1 ,a div with balance and a div with summary , and a form to make the user enter expense / income category and then after reflect it in the balance part of our app 
+
+i.e -> 
+export const ExpenseTracker = () => {
+    return(
+
+
+<>  
+     <div className="expense-tracker">
+        
+        <div className="container">
+
+<h1>Expense Tracker </h1>
+
+{/* to display balance  */}
+<div className="balance">
+    <h3>Your Balance :</h3>
+    <h2>1000💸</h2>
+</div>
+
+{/* to display summary of the balance  */}
+<div className="summary">
+    <div className="income">
+        <h4>Income </h4>
+        <p>1000💸</p>
+    </div>
+    <div className="expenses">
+        <h4>Expenses </h4>
+        <p>1000💸</p>
+    </div>
+</div>
+
+{/* form to add expense / income and make it reflect in our balance  */}
+<form className="add-transaction">
+ 
+ <input type="text" placeholder="Description" required />
+ <input type="number" placeholder="Amount" required />
+
+ 
+ <input type="radio" id="expense" value="expense" />
+ <label htmlFor="expense">Expense</label>
+ <input type="radio" id="income" value="income" />
+ <label htmlFor="income">Income</label>
+
+<button type="submit">Add Transaction</button>
+
+</form>
+
+        </div>
+    </div>  
+</>   
+
+    )}
+
+
+-> Now we also want the transactions part of the app here so we -> Now we do it inside a seprate div and not this expense tracker div so you need to add a () after the return statement which wraps the entire expense tracker component that we just created and should end just before the curly closing bracket -> )} ----> And also wrap this expense tracker fragment of the code inside empty component braces 
+
+--->Now below this component make another div -> 
+ <div className="transactions">
+<h3>Transactions:-</h3>
+ </div>
+
+
+
+************************************->And NOW AS WE WANT TO SHOW OUR TRANSACTIONS AS A LIST SO WE NEED TO SET UP OUR DATABASE IN FIREBASE CONSOLE -> SO NOW WE FOLLOW THESE STEPS :=>
+
+1) GO TO FIREBASE CONSOLE -> BUILD OPTION -> FIRESTORE DATABASE -> CREATE DATABASE -> CHOOSE THE LOCATION CLOSE TO YOU  ->
+START IN PRODUCTION MODE -> AS LOADING IS COMPLETED YOU WILL BE REDIRECTED TO THE DASHBOARD FOR YOUR DATABASE -> START COLLECTION ->GIVE COLLECTION ID(in our case its -> "transactions" ) -> auto id -> save -> delete the document -> 
+
+2) Now we created the structure of our collection and now inorder to get it working ->we need to use rules -> go to rules tab -> 
+change from if false to if true -> (as we want any one for this website to read and write to our database else we would have kept it as false! ) -> hit publish
+
+3) Come back to our data tab and now we think what kind of data we want inside our database so -> start collection -> collection id as "transactions" -> auto id -> save -> delete the document -> Now as we have our transactions named collection ->
+[WE NOW WANT TO KEEP A TRACK OF THE USER WHO MADE THE TRANSACTION SO THE USER ID OF THE USER , THE DESCRIPTION OF THE TRANSACTION SO THE TRANSACTION AMOUNT , TRANSACTION TYPE SO INCOME/EXPENSE , TIME OF THE TRANSACTION BEING CREATED SO WE DISPLAY THE TRANSACTIONS INORDER OF THE DATE IT WAS CREATED ] 
+
+--------------------------------->
+NOW TO DO THAT ITS EASY WE JUST WANT TO CREATE A FUNCTION THAT SENDS A NEW DOCUMENT TO THIS COLLECTION 
+*********************************************************************************************************
+===>TO DO THIS WE WILL CREATE A CUSTOM HOOK -> INSIDE OUR HOOKS FOLDER WE NOW CREATE A CUSTOM HOOK TO HANDLE ALL THE ADDING TRANSACTION FUNCTIONALITY OF OUR PROJECT-> CREATE A FILE NAMED -> useAddTransaction.js 
+[REMEMBER A CUSTOM HOOK IS NOTHING BUT A REACT FUNCTION THAT RETURNS DATA AND HAS ACCESS TO ALL OF THE REACT TOOLS]
+
+1) NOW INSIDE THIS useAddTransaction.js FILE -> 
+we start by importing adDoc and collection function from fire store 
+adDoc will be used to add data to our database 
+collection will be used in specifying of the collection 
+
+2) The main aim is to create a custom hook that has a defined function inisde it which ultimately by using the methods of firestore updates the desired data into our database -> 
+SO WE MAKE A HOOK USEADDTRANSACTION -> INSIDE IT WE MAKE ANOTHER ASYNC AWAIT FUNCTION  AS ADDING DATA TO A DATABASE IS AN ASYNC PROCESS -> ADDTRANSACTION -> INSIDE IT WE USE ADDDOC METHOD () OF FIRESTORE TO ADD IN THE DESIRED DATA TO OUR DB WHICH IN THIS CASE IS 
+
+*****NOW THE FIRST THING THAT WE NEED TO PASS IN THIS addDoc() function of firestore to update the data is the specific name of the collection****-> ****so inorder to do that we import the collection function here ->
+
+3) Now we provide a reference to the collection we want to use for updating our data ->  const transactionCollectionRef = collection()
+
+4) Now the 1st thing that we need to put in this reference will be something we did not create yet -> So we go to the config file of firestore and -> we import getFirestore it is for addDoc functionality of our custom hook useAddTransaction and it will allow us to create a reference to our database
+
+->import {getFirestore} from "firebase/firestore"
+
+5) Now at the end we use this getFireStore to create a reference of our database to be used -> 
+//creating a reference of our database to use to update collection 
+
+->export const db = getFirestore(app);
+
+6) Now finally we can use this database reference to update collection / data to our database using addDocs () method of firestore 
+coming back to useAddTransaction.js file -> we import the db variable -> import { db } from "../config/firebase-config"
+
+
+7) Now we use this db variable inside the collection reference we created as the 1st parameter and the 2nd parameter will be the collection name 
+->const transactionCollectionRef = collection(db,"transactions")
+
+8) Now as we have the reference of our collection we just put this reference inside of our addDoc function as the 1st parameter and as the 2nd parameter we put the object of data that we want to add in the database so -{}
+i.e->    await addDoc(transactionCollectionRef , {
+    userID:"",
+    description:"",
+    transactionAmount: 0,
+    transactionType:"",
+    createdAt:serverTimestamp()
+  });
+ 
+[NOTE:HERE we in our createdAt functionality used a serverTimestamp() function its an inbuild firestore function that will give us the exact time of our document being created , AND ALSO DON'T FORGET TO IMPORT IT ABOVE ->import {addDoc , collection , serverTimestamp} from "firebase/firestore"
+]
+
+9) NOW ALL WE NEED IS THIS INFO OF USER AND TRANSACTION SO WE ARE NOW GOING TO CALL IT AT IN THE EXPENSE TRACKER COMPONENT--->
+SO WE COME TO INDEX.JS FILE OF EXPENSE TRACKER COMPONENT-> 
+
+*import this custom hook there -> import { useAddTransaction } from "../../hooks/useAddTransaction"
+
+*now we use this useAddTransaction hook -> above the return statement we start by destructuring and extracting our our addTransaction  function from our custom hook -> const { addTransaction } = useAddTransaction();
+
+*now all we need to do is call this hook whenever this form is submitted -> 
+
+*So the gist is ---> IF WE WANT TO HAVE ACCESS TO THAT DATA OVER HERE WE JUST NEED TO PASS IN ARGUMENTS REGARDING THE DATA TO OUR addTransactions function INSIDE OUR CUSTOM HOOK FILE -> SO THAT WE DON'T NEED TO PASS IN THE HARD CODED DATA AND WE CAN GET IT FROM THE USER INPUT ------**EXCEPT THE USERID** AS THE USER ID IS RECIEVED FROM OUR LOCAL STORAGE 
+i.e---->
+const addTransaction = async ({description,transactionAmount,transactionType}) =>  {
+    // whatever data we put here inside the addDoc function of firebase will ultimateky be stored inside our database so we put the 
+    //reference of our colection 
+  await addDoc(transactionCollectionRef , {
+    userID:"",
+    description,
+    transactionAmount,
+    transactionType,
+    createdAt:serverTimestamp()
+  });
+}
+
+10) Now all that is left is to get userID but getting this from the local storage and convert it to an object from a string as when a user signs in the ID IS BEING SET OVER THERE IN THE STRING FORMAT AND AS IT IS A LOT OF WORK WE WILL SIMPLY CREATE A CUSTOM HOOK TO HANDLE THIS USER DATA FETCHING AND WHAT IT WILL DO IS WHENEVER WE CALL IT , IT WILL RETURN A OBJECT OF ALL USER INFO FILLED IN IT -> inside the hooks folder ->
+
+create a file named ->useGetUserInfo.js -> inside here ->
+
+* we create a function/custom hook -> useGetUserInfo -> and inside it we destructure all the info we needed after fetching back the data and using the JSON.parse method on it so that we get a converted javascript object 
+[Note->JSON.parse method basically transforms the stringified object back into an object and its basically does the opposite of what
+the JSON.stringify() function does i.e-> it converts a javascript object into a json string ]
+
+* we inside this hook used localStorage.getItem method and passed in -> "auth" as key to it as the key as this is what we called when we setItem and when JSON.parse method is combined with it the result will come back as an object and then ultimately we destructure 
+
+->export const useGetUserInfo = () => {
+
+  const { name, profilePhoto, userID, isAuth } = JSON.parse(
+    localStorage.getItem("auth")
+  );
+}; 
+
+
+* now we want to return these seprately as when we call this hook we can seprately also get the very specific and desired data variable  so below in the return statement ->  return {name , profilePhoto , userID , isAuth};
+i.e->
+export const useGetUserInfo = () => {
+
+  const { name, profilePhoto, userID, isAuth } = JSON.parse(
+    localStorage.getItem("auth")
+  );
+
+//here we are returning seprately 
+  return {name , profilePhoto , userID , isAuth};
+};
+
+11) Now in the useAddTransaction if we want to have the access the ID of the user  that is in the local storage so we will simply import this hook there -> import { useGetUserInfo } from "./useGetUserInfo"
+
+->and now we use it above the return statement there to get the user id  by destructuring the id from the hook returns ->
+const {userID} = useGetUserInfo();
+
+-> Now we just simply use this userID as it is without giving it any value -> *** Inside our addDoc function ***
+i.e-> await addDoc(transactionCollectionRef , {
+    userID,
+    description,
+    transactionAmount,
+    transactionType,
+    createdAt:serverTimestamp()
+  });
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+->NOW TILL HERE WE ARE ALMOST FINISHED SETTING UP THE useAddTransaction hook and now we test it to see if its actually working -> 
+
+GO TO INDEX.JS FILE OF OUR EXPENSE TRACKER APP AND THERE GIVE A CALL TO THIS HOOK 
+
+
+-> 1) To our form we add an event listener -> and pass in our onSubmit function to it that will be called when the form is submitted ->
+<form className="add-transaction" onSubmit={onSubmit}>
+
+-> 2) Now we define this onSubmit function above and as the form refreshes the page we will have the preventDefault and after the function onSubmit is triggered we give a call to our addTransaction() function ->
+i.e-
+const onSubmit = async(e)=>{
+e.preventDefault();
+addTransaction()
+}
+
+-> 3) Now remember our add transaction function is done till here but we are not taking any input till now so we will test it with a fake data 
+-> so inside the addTransaction function we feed in some fake data -> example->
+addTransaction({description:"Haircut" , transactionAmount:22 , transactionType:"expense"})
+Now if we visit our database we should see a new collection being created with this fake added data in it so we are good to go
+
+[Note that if you don't use the collection and we spend a lot of time not adding anything to the collection so it automatically gets deleted  so -> create document -> name -> transactions -> delete the default document ]
+
+
+-> 4) Now till here we have only inserted this fake and hard coded data into our database but we now want to get this data from our form so we -> in THIS SCENARIO MAKE THE USE OF ***useState hook ***
+
+*go to index.js of our expense tracker page -> AND CREATE 3 STATES ABOVE THE RETURN STATEMENT OVER THERE as THESE 3 STATES ARE GOING TO BE USED TO GET ALL THREE DATA FROM THE FORM WHICH IS DESCRIPTION OF THE EXPENSE / INCOME , AMOUNT OF THE TRANSACTION , AND THE TRANSACTION CATEGORY- INCOME/EXPENSE->
+
+//Now we make use of useState hook to add in the data that the user enters in the form to our database 
+const [description , setDescription] = useState("");
+const [transactionAmount , setTransactionAmount] = useState(0);
+const [transactionType , setTransactionType] = useState("expense");
+
+*** NOW the thing we want to do to update the value is whenever there is a change in their respective input fields we grab THEIR ==> EVENT.TARGET.VALUE and assign it to the SET METHOD OF THE USE STATE HOOK FOR THEIR RESPECTIVE STATES  i.e-> ON EACH OF THE INPUT FIELDS WE USE A onChange() EVENT LISTENER AND THEN AFTER GRABBING THE EVENT WE ULTIMATELY ASSIGN THE VALUES TO THEIR RESPECTIVE STATES ***
+
+I.E--->
+
+example -> onChange={(e)=>setDescription(e.target.value)}
+
+- <input type="text" placeholder="Description" required  onChange={(e)=>setDescription(e.target.value)}/>
+- <input type="number" placeholder="Amount" required  onChange={(e)=>setTransactionAmount(e.target.value)}/>
+- <input type="radio" id="expense" value="expense" onChange={(e)=>setTransactionType(e.target.value)} />
+- <input type="radio" id="income" value="income" onChange={(e)=>setTransactionType(e.target.value)}/>
+
+-> Now we notice that we can select both the options so that does'nt make sense and also we use expense as a default value but its not showing on screen so what we do is -> IN THE EXPENSE AND INCOME INPUT WE ADD A CHECKED VALUE AND SPECIFY THEIR TRANSACTION TYPE 
+WHICH DENOTES IF THE EXPENSE IS SELECTED IS STAYS AND IF THE INCOME IS SELECTED THE SELECTION RADIO MARKER CHANGES AND STAYS ON INCOME OPTION 
+-> <input type="radio" id="expense" value="expense" onChange={(e)=>setTransactionType(e.target.value)} checked={transactionType === "expense"} />
+-> <input type="radio" id="income" value="income" onChange={(e)=>setTransactionType(e.target.value)} checked={transactionType === "income"}/>
+
+
+-> 5) Now we can remove our hard coded data and just pass in the values -> i.e ->
+addTransaction({description, transactionAmount , transactionType});
+
+NOW WE CHECK IF THIS IS WORKING AND IS OUR DOCUMENT BEING CREATED USING the addDoc function from fire store and if so we are good to go 
+
+---------------------------------------------------------------------------------------------------------------------------------------
+
+***NOW WE MAKE THE HOOK TO GET THESE TRANSACTION LIST ***
+
+1)INSIDE THE HOOKS FOLDER CREATE ANOTHER FILE NAMED -> useGetTransactions.js -> Now we design this custom hook to fetch our transactions 
+
+-->export const useGetTransactions = () => {
+     return{transactions};
+}
+(THE GIST IS WE HAVE A FUNCTION INSIDE THIS CUSTOM HOOK OF OURS WHICH RETRIEVES THE LIST OF THE TRANSACTIONS THAT THE USER CREATED AND THEN WE RETURN THIS LIST OF THE TRANSACTIONS)
+
+2) we inside our useGetTransactions function start by having a state which will be necessary to keep track of the transactions by the logged in user -> const [transactions, setTransactions] = useState([]);
+
+3) Now as we don't want to call some function every time again and again whenever the user creates a transaction so for it we create a function that gets all the transactions and then ***WE MAKE USE OF useEffect hook and place this function inside it , this ultimately enables the function to be called automatically anytime the transaction is being created ***
+i.e->
+-> const getTransactions = async () => {
+
+}
+
+-> useEffect(()=>{
+    getTransactions()
+} , []);
+
+4) Now we write the logic for getTransactions hook ====>
+
+* we start by using a try catch block 
+* inside that try catch block we use the query method of the firestore to query over the collection in our database 
+* and as inside this query method we need to pass in the reference of the collection we made we now make the reference of the collection "transactions" from our database ***AS ITS 1ST ARGUMENT , AND THE 2ND ARGUMENT IS THE NAME OF THE QUERY THAT WE WANT TO PERFORM OM THE SELECTED COLLECTION REFERENCE *** 
+i.e ->
+// now we create a reference to the collection we made 
+//providing reference to the collection we want to use inside this collection method of firestore reference the 1st parameter will be 
+// the database reference that we create inside our config file and the second parameter should be the collection name   
+***const transactionCollectionRef = collection(db, "transactions");***
+
+-> Now we pass in this collection refernece to our query method as its first parameter  ->    const queryTransactions = query(transactionCollectionRef);
+-> THEN NOW WE GIVE IN OUR SECOND REFERENCE I.E-> WHAT QUERY WE WANT TO MAKE ->
+[NOTE:-THE SYNTAX OF MAKING A QUERY ON FIREBASE STORE IS---> where function of firestore-> followed by the "identifier of the condition" , followed by a  "firestore operand / condition" -> followed by the variable to be checked against  all inside a bracket in the brackets ->
+so --> where("userID" , "==" , userID)
+]
+
+-> remember as we don't have the access to the userID till here so we will import it from the hook we created to fetch the user id
+i.e-//to have access to the user id here we import the getuserinfohook we created before and then we destructure the userID from it 
+import { useGetUserInfo } from "./useGetUserInfo";
+
+-now we destructure the userID from it -> const {userID} = useGetUserInfo();
+
+
+
+***[Note that you do have all the necessary imports at the top of the file i.e->
+import { query } from "firebase/firestore";
+import { useEffect, useState } from "react";
+//we import collection from firebase and db from our firebase-config
+import { collection } from "firebase/firestore";
+import { db } from "../config/firebase-config"; ]***
+
+5) Finally we want to order the transactions this is optional but a good practice ->
+we just need to use the orderBy functionality of the fire store while using the query functionality i.e-> orderBy("createdAt")
+-> //we use the orderBy function to dilever the results in a orderly manner according to our conditional inside it 
+    const queryTransactions = query(transactionCollectionRef , where("userID" , "==" , userID) , orderBy("createdAt"));
+
+
+6) Now we make use of onSnapshot() functionality  inside the try block of firestore that enables us to get the data and we use forEach loop to iterate over the list and display the data
+
+//now we make the use of onSnapshot() functinality that comes from firebase and will basically keep tracking a query if there are 
+//any changes to it / in it 
+// [inside it we pass in the query name to be tracked so our ->queryTransactions , and our function (snapshot)]
+    onSnapshot(queryTransactions , (snapshot)=>{
+
+
+        snapshot.forEach((doc)=>{
+const data = doc.data();
+const id = doc.id
+        })
+    })
+
+
+---> now inside this snapshot function we need to have an array that stores the list of the transactions 
+//we make this array to store the list of the documents / transactions made by the user and inside the looping we use .push to
+// push the final document data as needed i.e => id and rest of the data 
+let docs = [];
+
+->And after the snapshot is done then we can come out of the snapshot function and  setTransactions to docs
+i.e ->         
+snapshot.forEach((doc)=>{
+const data = doc.data();
+const id = doc.id
+
+docs.push({...data, id});
+        });
+
+        //here when snapshot is done we are assigning the setTransactions to the variable containing the right data which is docs 
+        setTransactions(docs);
+
+
+
+7) Now we need to clean up this snap shot function so we 
+
+* above the try block define a variable unsubscribe -> let unsubscribe;
+* assign this variable = to the snapshot function below ->      unsubscribe =  onSnapshot(queryTransactions , (snapshot)=>{
+* make this unsubscribe return at the end of the catch block->return () => unsubscribe();
+
+Now we firstly test this hook to be working till here --> 
+* start by importing this hook in the index.js of expense tracker ->
+import { useGetTransactions } from "../../hooks/useGetTransactions";
+
+* then destructure inside the expense tracker function the  transactions function from it ->
+//here we destructure transactions function from our custom hook which ultimately gets the list of transactions 
+const { transactions } = useGetTransactions();
+
+* then we can add a list at the end -> below the h3 heading of transactions
+-> AND AS WE WILL BE USING THE PARTS OF THE LIST OFTEN SO WE DESTRUCTURE IT FROM OUR TRANSACTIONS DATA FIRST ->
+<h3>Transactions:-</h3>
+<ul>
+    {transactions.map((transaction) =>{
+
+//WE HERE DESTRUCTURE THE ITEMS FROM OUR TRANSACTIONS LIST 
+const {description, transactionAmount , transactionType} = transaction;
+
+        return(
+            <li>
+                <h4> {description} </h4>
+               <p>
+                 {""}
+                ${transactionAmount} . <label> {transactionType} </label>
+                 </p>
+            </li>
+        )
+    })}
+</ul>
+
+Now we test it -> [***REMEMBER THAT WHEN WE LOAD OUR PAGE IT WILL GIVE A ERROR OF INDEXES REQUIRED IN THE CONSOLE SO JUST TAP ONTHAT ERROR FROM THE CONSOLE -> IT WILL REDIRECT YOU TO THE FIREBASE LOGIN AND NOW AND WHEN YOU LOGIN WITH YOUR ID THIS TIME YOU WILL BE PROMPTED WITH A MESSAGE OF CREATE INDEX AND THIS IS HOW FIREBASE WILL AUTOMATICALLY CREATE THE INDEXES REQUIRED AND AS THIS PROCESS IS DONE NOW WHEN YOU RELOAD YOU APPLICATION YOU WILL BE ABLE TO SEE THE TRANSACTION DATA IN IT ***]
+
+
+->NOW WE ADD SOME CSS TO MAKE THE USER OBSERVE THE EXPENSE WITH RED COLOR AND INCOME WITH GREEN -> 
+i.e->  ${transactionAmount} . <label style={{color: transactionType === "expense" ? "red" : "green"}}> {transactionType} </label>
+now you will see the label of expense as red and of income as green on your application 
+
+---------------------------------------------------------------------------------------------------------------------------------------
+
+                                   ***NOW WE START BY ADDING SOME CSS TO EACH PAGE***
+
+
+1) FOR AUTH PAGE WE -> CREATE A FILE -> styles.css
+2) FOR EXPENSE-TRACKER PAGE WE -> CREATE A FILE -> styles.css
+3) NOW WE ADD IMPORT STATEMENTS ON BOTH THE INDEX.JSX FILES FOR THEIR STYLES.CSS -> EXPENSE-TRACKER PAGE , AUTH PAGE
+I.E-> import "./styles.css";
+4) FIRSTLY COMMENT OUR THE INDEX.CSS code of our app.jsx else it will clash with other styling properties -> AND THERE IN THE INDEX.CSS CODE ADD THIS ->
+body{
+  padding: 0;
+  margin: 0;
+}
+-> ALSO REMOVE THE APP.CSS CODE 
+
+5) now in auth -> styles.css-> ADD THE FOLLOWING CSS CODE :=>
+
+.login-page {
+    width: 100vw;
+    height: calc(100vh);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-shadow: -1px 2px 6px rgba(2, 48, 71, 0.54);
+    background: rgb(0, 204, 255);
+    background: linear-gradient(
+      90deg,
+      rgba(0, 204, 255, 1) 0%,
+      rgba(115, 33, 188, 1) 100%
+    );
+  }
+  /* #219ebc */
+  
+  .login-page p {
+    font-size: 50px;
+    font-weight: bold;
+  }
+  
+  /* GOOGLE BUTTOn */
+  .login-with-google-btn {
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    padding: 5px 16px 12px 42px;
+    border: none;
+    border-radius: 3px;
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.25);
+    font-size: 25px;
+    font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTcuNiA5LjJsLS4xLTEuOEg5djMuNGg0LjhDMTMuNiAxMiAxMyAxMyAxMiAxMy42djIuMmgzYTguOCA4LjggMCAwIDAgMi42LTYuNnoiIGZpbGw9IiM0Mjg1RjQiIGZpbGwtcnVsZT0ibm9uemVybyIvPjxwYXRoIGQ9Ik05IDE4YzIuNCAwIDQuNS0uOCA2LTIuMmwtMy0yLjJhNS40IDUuNCAwIDAgMS04LTIuOUgxVjEzYTkgOSAwIDAgMCA4IDV6IiBmaWxsPSIjMzRBODUzIiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNNCAxMC43YTUuNCA1LjQgMCAwIDEgMC0zLjRWNUgxYTkgOSAwIDAgMCAwIDhsMy0yLjN6IiBmaWxsPSIjRkJCQzA1IiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNOSAzLjZjMS4zIDAgMi41LjQgMy40IDEuM0wxNSAyLjNBOSA5IDAgMCAwIDEgNWwzIDIuNGE1LjQgNS40IDAgMCAxIDUtMy43eiIgZmlsbD0iI0VBNDMzNSIgZmlsbC1ydWxlPSJub256ZXJvIi8+PHBhdGggZD0iTTAgMGgxOHYxOEgweiIvPjwvZz48L3N2Zz4=);
+    background-color: white;
+    background-repeat: no-repeat;
+    background-position: 12px 11px;
+  }
+  .login-with-google-btn:hover {
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.25);
+  }
+  .login-with-google-btn:active {
+    background-color: #eeeeee;
+  }
+  .login-with-google-btn:focus {
+    outline: none;
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.25),
+      0 0 0 3px #c8dafc;
+  }
+  .login-with-google-btn:disabled {
+    filter: grayscale(100%);
+    background-color: #ebebeb;
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.25);
+    cursor: not-allowed;
+  }
+
+6) Now in expense-tracker -> styles.css-> ADD THE FOLLOWING CSS CODE :=>
+
+.expense-tracker {
+    width: 100vw;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    color: #023047;
+  }
+  
+  .expense-tracker h1 {
+    font-size: 40px;
+  }
+  .expense-tracker button {
+    margin-left: 10px;
+  }
+  .profile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-left: 200px;
+  }
+  .profile-photo {
+    width: 200px;
+    border-radius: 50%;
+  }
+  
+  .sign-out-button {
+    border: none;
+    margin-top: 50px;
+    width: 150px;
+    background: #3498db;
+    background-image: linear-gradient(to bottom, #3498db, #2980b9);
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: bold;
+    padding: 10px 20px 10px 20px;
+    text-decoration: none;
+  }
+  
+  .sign-out-button:hover {
+    background: #3cb0fd;
+  
+    background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  
+  .transactions {
+    margin-left: 430px;
+    margin-top: 20px;
+    padding-left: 10px;
+    width: 600px;
+    height: 400px;
+    overflow: auto;
+    border: 3px solid #023047;
+  }
+
+
+
+7) Now if you test your application the css styles should be working on both the pages and now you are good to go 
+
+8) Now you may notice that our application is not showing the user name and their profile picture on our expense tracker page -> 
+SO NOW FOR THIS WE WILL USE OUR CUSTOM CREATED HOOK -> useGetUserInfo hook-> 
+
+* Now inside the expense-tracker -> index.js file -> we import this hook [useGetUserInfo()]  
+->//here we import this getuserinfo hook to be able to display the name and profile picture of the user 
+import { useGetUserInfo } from "../../hooks/useGetUserInfo";
+
+* Now we destructure the user name and the user profile picture from this hook inside our expense tracker function 
+-> const {name , profilePhoto} = useGetUserInfo();
+
+* Now we use these destructured user info inside our expense tracker page [name & profile photo]
+
+-> so now for the name we customize our previously written expense tracker heading from -> <h1>Expense Tracker </h1>
+TO ----> <h1>{name}'s Expense Tracker </h1>
+[this will reflect the user's name onto our app]
+
+-> now for the photo we set it up just out side the div with class name container ->
+{profilePhoto && (
+          <div className="profile">
+               <img className="profile-photo" src={profilePhoto}/>
+          </div>
+)}
+
+-> till here we will be able to see the user name and their google id's profile photo 
+
+*** But we also want to add a button functionality to this photo that helps the user to SIGN OUT IF NEEDED***
+
+-> so below the image we create a sign out button with an event listner that triggers a sign out function which we make ahead above the return statement 
+i.e->{profilePhoto && (
+          <div className="profile">
+          {/* this is to display the user image with the already applied css in our styles.css file  */}
+               <img className="profile-photo" src={profilePhoto}/>
+          {/*this is to add a signout / logout button below the image also with the already applied css styles and also we add an 
+           event listener -> button click that triggers a function that ultimately signs out the current user   */}
+               <button className="sign-out-button" onClick={signUserOut}> Sign Out</button>
+          </div>
+)}
+
+* Now we create this signUserOut function above the return statement for logout functionality 
+
+-> for that firstly we import this useNavigate hook from react-router-dom to be able to redirect the user to login page after being logged out 
+import {useNavigate} from "react-router-dom"
+
+
+-> Then below we destructure from this useNavigate hook 
+i.e-> const navigate = useNavigate();
+
+-> We import the auth variable from our firebase config file so that we can allow the logout functionality to happen 
+import { auth } from "../../config/firebase-config";
+
+
+-> Now finally we use this navigate functionality on our signUserOut function after we clear the local storage -> 
+i.e->
+const signUserOut = async() =>{
+//inside this sign out functionality we use the ---> sign out function from firebase to perform this functionality 
+try {
+    await signOut(auth);
+    //if there is no error in triggering this signout function it means we need to clear the local storage and 
+    //then we need to navigate to our login page using the use navigate hook so import navigate at the top 
+    localStorage.clear();
+    navigate("/");
+} catch (error) {
+    console.error(error)
+}
+ 
+}
+
+* Now we test the signout button and if successful we are good to go 
+
+---------------------------------------------------------------------------------------------------------------------------------------
+             ***NOW THE ONLY THING THAT IS LEFT IS THE BALANCING OF TRANSACTION WITH ACCOUNT BALANCE***
+
+1) WE CAN USE FRONTEND HANDLING -> 
+
+* ---> GO TO useGetTransactions hook  ->
+
+-> here we start by maintaining a state that keeps track of all the transactions total that contains an object 
+//we make this to keep a track of the transactions total in this case its going to be an object i.e->
+const [transactionTotals, setTransactionTotals] = useState({balance:0.0 , income:0.0 , expenses:0.0});
+
+-> Now we come over the snapshot function where we are dealing with our transactions and this snapshot function is giving the list details of all the transactions in our database ->
+
+-> inside the snapshot function -> 
+//here we are calculating the total income and expenses to be dealt with accordingly 
+let totalIncome = 0;
+let totalExpenses = 0;
+
+then after the push functionality we calculate the data ->
+//here we calculate the results according to the transactions to be reflected in the balance 
+if(data.transactionType === "expense"){
+    totalExpenses += Number(data.transactionAmount);
+}else{
+    totalIncome += Number(data.transactionAmount);
+} 
+
+
+* Now right after we set our transactions we can also set our transaction totals -> i.e -> 
+setTransactions(docs);
+
+        //below the setting up of our transactions we also set up our transaction totals 
+        let balance = totalIncome - totalExpenses;
+        setTransactionTotals({
+            balance,
+            expenses:totalExpenses,
+            income:totalIncome
+        })
+
+
+* Now at the end  we with our transactions we also return our  => transactionTotals         i.e->
+  return { transactions , transactionTotals };
+
+
+
+----------------------------------------------------------->
+Now we go to our expense tracker page we -> 
+
+1) also import transactionTotals with our transactions -> const { transactions , transactionTotals } = useGetTransactions();
+
+2) Now we destructure from transactionTotals as well -> i.e-> 
+//we destructure the balance, income , expenses from our transactionTotals to be used seprately and easily
+const {balance , income , expenses } = transactionTotals;
+
+3) Now we use these destructured items -> 
+
+* in the income part below with the p tag we change it to ---->        <p>₹{income}</p>
+* in the expenses part below with the p tag we change it to ---->        <p>₹{expenses}</p>
+
+
+Now by doing this we should see the updation to the values of expenses / incomes according to the user transaction 
+
+4) Now we update our balance according to the transaction 
+for balance we change the hard coded balance to ->     <h2>${balance}</h2>
+
+[NOTE:Till here you may see that the balance is getting affected correctly according to the transactions but the only issue is that when the expense value increases than the balance the negative balance is not shown correctly so we -> 
+
+*** We just show our balance with a condition i.e->     {balance >=0 ? <h2>₹{balance}</h2> : <h2>-₹{balance * -1}</h2> } ***
+
+***This till here will now update the balance correctly in the right format***
+]
+
+---------------------------------------------------------------------------------------------------------------------------------------
+
+NOW TILL HERE EVERYTHING IS ALMOST COMPLETE WE CAN JUST CLEAR THE INPUTS AFTER THE TRANSACTION ACCORDINGLY ---> 
+
+1) IN the input field of index.js of expense-tracker page we just -> 
+
+we set the value fields of both the inputs accordingly -> 1st to description & 2nd to transactionAmount
+<input type="text" placeholder="Description" value={description} required  onChange={(e)=>setDescription(e.target.value)}/>
+ 
+<input type="number" placeholder="Amount" value={transactionAmount} required  onChange={(e)=>setTransactionAmount(e.target.value)}/>
+
+
+2) now we can apply useState hook to set their values to empty after the transaction inside the onSubmit function's end i.e -> 
+-> //here we apply useState hook to make the values of input fields as empty after hitting the add transaction button 
+setDescription("");
+setTransactionAmount("");
+
+---------> Till here once you submit the transactions both fields should become empty and if so we are good to go 
+
+=======================================================================================================================================
+
+***Now we deploy this application ***
